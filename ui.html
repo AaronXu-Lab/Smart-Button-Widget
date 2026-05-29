@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Editor</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css" />
+
+  <style>
+    :root {
+      --input-text-placeholder: #959593;
+      --input-text-active: #131319;
+      --text-highlight: #7760EB;
+      --general-hover-normal: #EAEAEA
+    }
+
+    body {
+      font-family: sans-serif;
+      margin: 16px;
+    }
+
+    /* 顶部容器，左侧放输入框，右侧放按钮 */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .top-bar input {
+      flex: 1;
+      font-size: 16px;
+      line-height: 20px;
+      font-weight: 600;
+      margin-right: 8px;
+      height: 20px;
+      border: none;
+      outline: none;
+      color: var(--input-text-active);
+    }
+
+    .top-bar input::placeholder {
+      color: var(--input-text-placeholder);
+      font-weight: 500;
+      opacity: 1;
+    }
+
+    .top-bar button {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      /* 图标与文本之间的间距 */
+      padding: 2px 4px;
+      /* 上下 2px，左右 4px */
+      font-size: 14px;
+      line-height: 16px;
+      font-weight: 500;
+      background-color: transparent;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      color: var(--text-highlight);
+    }
+    .top-bar button:hover {
+      background-color: var(--general-hover-normal);
+    }
+
+    .row {
+      margin: 8px 0;
+    }
+
+    /* 让编辑器撑满剩余空间 */
+    .editor-container {
+      height: calc(100vh - 80px);
+      padding-bottom: 12px;
+    }
+
+    /* CodeMirror 自定义背景：浅灰 #f5f5f5 */
+    .CodeMirror {
+      height: 100%;
+      background: #f5f5f5;
+      font-size: 14px;
+      line-height: 20px;
+      padding: 6px 8px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 顶部输入框 + 按钮 -->
+  <div class="top-bar">
+    <input id="scriptName" type="text" placeholder="Unnamed script" />
+    <button id="runBtn">
+      <!-- SVG 图标 -->
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M5.5 10.3885V5.61151C5.5 5.11764 6.09996 4.8282 6.5366 5.11141L10.219 7.4999C10.5937 7.74292 10.5937 8.25708 10.219 8.5001L6.5366 10.8886C6.09996 11.1718 5.5 10.8824 5.5 10.3885Z"
+          fill="var(--text-highlight)" />
+      </svg>
+      Run
+    </button>
+  </div>
+
+  <!-- 容纳编辑器 -->
+  <div class="editor-container" style="margin-top: 12px;">
+    <textarea id="code" wrap="off" spellcheck="false"></textarea>
+  </div>
+
+  <!-- CodeMirror 依赖 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js">
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js">
+  </script>
+
+  <script>
+    // 1. 获取 DOM
+    const scriptNameEl = document.getElementById('scriptName')
+    const codeEl = document.getElementById('code')
+    const runBtn = document.getElementById('runBtn')
+
+    // 2. 初始化 CodeMirror
+    const cmEditor = CodeMirror.fromTextArea(codeEl, {
+      mode: 'javascript',
+      lineNumbers: true, // 关闭行号
+      scrollbarStyle: 'null'
+    })
+
+    // 3. 接收来自插件的消息
+    window.onmessage = (event) => {
+      const { pluginMessage } = event.data
+      if (!pluginMessage) return
+
+      if (pluginMessage.type === 'resume') {
+        // 恢复脚本内容
+        cmEditor.setValue(pluginMessage.payload || '')
+        // 恢复脚本名
+        scriptNameEl.value = pluginMessage.scriptName || ''
+      }
+    }
+
+    // 4. 监听 CodeMirror 的变动：实时发送给插件保存
+    cmEditor.on('change', () => {
+      const payload = cmEditor.getValue()
+      parent.postMessage({ pluginMessage: { type: 'save', payload } }, '*')
+    })
+
+    // 5. 监听脚本名的变动：实时发送给插件保存
+    scriptNameEl.addEventListener('input', (e) => {
+      parent.postMessage({
+        pluginMessage: { type: 'saveName', payload: e.target.value }
+      }, '*')
+    })
+
+    // 6. “Run” 按钮点击
+    runBtn.addEventListener('click', () => {
+      const payload = cmEditor.getValue()
+      parent.postMessage({ pluginMessage: { type: 'run', payload } }, '*')
+    })
+  </script>
+</body>
+
+</html>
