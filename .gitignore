@@ -1,7 +1,9 @@
 # Node
 *.log
 *.log.*
-# node_modules
+node_modules/
+.npm-cache/
+.DS_Store
 
 out/
 dist/

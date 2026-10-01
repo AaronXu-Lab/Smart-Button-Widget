@@ -10,6 +10,6 @@
 ## 快速上手
 
 1. 下载或克隆本仓库。
-2. 在终端运行 `npm install`。
-3. 运行编译命令（如 `npm run dev`）生成 `dist/code.js`。
+2. 在终端运行 `npm ci`。
+3. 运行 `npm run build` 生成 `dist/code.js`；开发时运行 `npm run watch`，在源文件变化后自动重新编译。
 4. 在 Figma 中导入 `manifest.json`，即可在画布中添加并使用该小组件。
